@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: tis_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app  # Ánh xạ code local vào container (tiện cho việc code Dev)
+      - backend_media:/app/media # Lưu trữ ảnh upload vĩnh viễn
+      - backend_db:/app/db.sqlite3 # Lưu trữ database vĩnh viễn
+    environment:
+      - DEBUG=True
+    restart: unless-stopped
+
+# Khai báo các volume để lưu trữ dữ liệu bền vững (persistent data)
+volumes:
+  backend_media:
+  backend_db:
