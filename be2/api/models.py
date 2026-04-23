@@ -246,6 +246,10 @@ class ChatMessage(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Thời gian gửi")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Thời gian cập nhật")
 
+# THÊM 2 DÒNG NÀY VÀO DƯỚI CÙNG CỦA MODEL
+    attachment_url = models.CharField(max_length=500, null=True, blank=True)
+    attachment_type = models.CharField(max_length=50, null=True, blank=True)
+
     class Meta:
         # Sắp xếp mặc định theo thời gian tăng dần (Tin nhắn cũ ở trên, mới ở dưới)
         ordering = ['created_at'] 

@@ -19,6 +19,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('api/chat/', include('chat.urls')),
 ]
 from django.conf import settings # Thêm dòng này
 from django.conf.urls.static import static # Thêm dòng này
