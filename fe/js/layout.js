@@ -16,7 +16,7 @@ async function loadHeader() {
     if (!placeholder) return;
 
     try {
-        const response = await fetch('components/header.html');
+        const response = await fetch('/components/header.html');
         if (!response.ok) throw new Error("Header not found");
         placeholder.innerHTML = await response.text();
         
