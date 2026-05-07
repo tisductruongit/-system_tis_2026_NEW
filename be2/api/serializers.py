@@ -203,27 +203,30 @@ class OrderSerializer(serializers.ModelSerializer):
 class ChatMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
-
     created_at = serializers.DateTimeField(format="%H:%M %d/%m", read_only=True)
 
     class Meta:
         model = ChatMessage
-        fields = ['id', 'consultation', 'sender', 'message', 'is_staff_reply', 'created_at', 'sender_name', 'avatar']
+        fields = [
+            'id', 'consultation', 'sender', 'message', 
+            'is_staff_reply', 'created_at', 'sender_name', 
+            'avatar', 'attachment_url', 'attachment_type'
+        ]
+
     def get_sender_name(self, obj):
-        if obj.is_staff_reply and obj.sender:
-            return f"{obj.sender.last_name} {obj.sender.first_name}".strip()
-        return "Khách hàng"
+        if obj.sender:
+            return f"{obj.sender.last_name} {obj.sender.first_name}".strip() or obj.sender.username
+        return obj.guest_name or "Khách hàng"
 
     def get_avatar(self, obj):
-        if obj.is_staff_reply and obj.sender and obj.sender.avatar:
-            return obj.sender.avatar.url if hasattr(obj.sender.avatar, 'url') else None
+        # Trả về avatar của người gửi (Staff hoặc User có tài khoản)
+        if obj.sender and obj.sender.avatar:
+            return obj.sender.avatar.url
         return None
 
 class ConsultationRequestSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
     created_at_formatted = serializers.DateTimeField(source='created_at', format="%d/%m/%Y %H:%M", read_only=True)
-    
-    # --- THÊM 2 TRƯỜNG NÀY ---
     processor_name = serializers.SerializerMethodField()
     last_message = serializers.SerializerMethodField()
 
@@ -239,13 +242,17 @@ class ConsultationRequestSerializer(serializers.ModelSerializer):
     def get_last_message(self, obj):
         last_msg = obj.messages.last()
         if last_msg:
+            # Nếu tin nhắn trống nhưng có file đính kèm
+            content = last_msg.message
+            if not content and (last_msg.attachment or last_msg.attachment_url):
+                content = "[Tệp đính kèm]"
+            
             return {
-                "message": last_msg.message,
+                "message": content,
                 "time": last_msg.created_at.strftime("%H:%M"),
                 "is_staff": last_msg.is_staff_reply
             }
         return None
-
 class NewsSerializer(serializers.ModelSerializer):
     class Meta:
         model = News
