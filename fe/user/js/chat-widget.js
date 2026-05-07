@@ -1,25 +1,102 @@
 /**
  * TIS System - Chat Widget cho Khách hàng (User)
+ * Phiên bản: Đã tắt chức năng gửi file (Guest Upload Disabled)
  */
 
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("✅ Chat Widget script đã khởi chạy!");
+// =========================================================
+// 1. CHỨC NĂNG THÔNG BÁO POPUP (GLOBAL)
+// =========================================================
+document.addEventListener('DOMContentLoaded', () => {
+    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission();
+    }
+});
 
-    // --- CẤU HÌNH BIẾN TOÀN CỤC ---
+function showGlobalNotification(senderName, messageText) {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+    const chatWindow = document.getElementById('chat-widget-window'); 
+    const isWidgetClosed = chatWindow ? chatWindow.classList.contains('d-none') : true;
+
+    // Chỉ thông báo khi tab bị ẩn hoặc khung chat đang đóng
+    if (document.hidden || isWidgetClosed) {
+        const notif = new Notification(`Tin nhắn từ ${senderName}`, {
+            body: messageText || "[Đã gửi một tệp đính kèm]",
+            icon: "/fe/images/logo.png" 
+        });
+
+        notif.onclick = function() {
+            window.focus();
+            if (chatWindow && isWidgetClosed) {
+                chatWindow.classList.remove('d-none');
+            }
+            this.close();
+        };
+    }
+}
+
+// =========================================================
+// 2. KHỞI TẠO CHAT WIDGET
+// =========================================================
+function initChatWidget() {
+    if (window.__chatWidgetInitialized) return;
+    window.__chatWidgetInitialized = true;
+
+    console.log("Chat Widget đã khởi chạy (Đã tắt Upload File)");
+
+    // Cấu hình kết nối
+    const currentHost = window.location.hostname || "hcm-tis-uat.tisbroker.local";
+    const apiBaseUrl = `http://${currentHost}:8000/api`;
+    const wsBaseUrl = window.location.protocol === "https:" 
+        ? `wss://${currentHost}:8000/ws` 
+        : `ws://${currentHost}:8000/ws`;
+
+    // Biến trạng thái
     let chatSocket = null;
+    let reconnectTimer = null;
     let consultationId = localStorage.getItem('current_consultation_id');
     let customerName = localStorage.getItem('chat_customer_name') || "Khách hàng";
-    
-    // Tự động nhận diện IP/Domain đang chạy thay vì fix cứng 127.0.0.1
-    const currentHost = window.location.hostname || "127.0.0.1";
-    const API_BASE_URL = `http://${currentHost}:8000/api`;
-    const WS_BASE_URL = window.location.protocol === "https:" ? `wss://${currentHost}:8000/ws` : `ws://${currentHost}:8000/ws`;
 
-    // ==========================================
-    // 1. LẮNG NGHE SỰ KIỆN CLICK (Mở/Đóng chat)
-    // ==========================================
-    document.addEventListener('click', (e) => {
-        const launcherBtn = e.target.closest('#chat-widget-btn');
+    // Lắng nghe sự kiện toàn cục
+    attachEventListeners();
+
+    // Kiểm tra trạng thái phiên làm việc khi load trang
+    checkCurrentSession();
+
+    // =========================================================
+    // CÁC HÀM XỬ LÝ SỰ KIỆN (EVENTS)
+    // =========================================================
+    function attachEventListeners() {
+        document.addEventListener('click', handleClicks);
+        document.addEventListener('submit', handleForms);
+        
+        // BỔ SUNG: LƯU TẠM DỮ LIỆU KHI KHÁCH ĐANG GÕ 
+        document.addEventListener('input', (e) => {
+            if (e.target.id === 'chat-customer-name') sessionStorage.setItem('tmp_chat_name', e.target.value);
+            if (e.target.id === 'chat-customer-phone') sessionStorage.setItem('tmp_chat_phone', e.target.value);
+            if (e.target.id === 'chat-customer-note') sessionStorage.setItem('tmp_chat_note', e.target.value);
+        });
+
+        // Khôi phục lại chữ nếu khách lỡ F5
+        const n = document.getElementById('chat-customer-name');
+        const p = document.getElementById('chat-customer-phone');
+        const nt = document.getElementById('chat-customer-note');
+        if (n && sessionStorage.getItem('tmp_chat_name')) n.value = sessionStorage.getItem('tmp_chat_name');
+        if (p && sessionStorage.getItem('tmp_chat_phone')) p.value = sessionStorage.getItem('tmp_chat_phone');
+        if (nt && sessionStorage.getItem('tmp_chat_note')) nt.value = sessionStorage.getItem('tmp_chat_note');
+
+        // Sự kiện gõ phím Enter để gửi tin nhắn
+        document.addEventListener('keypress', (e) => {
+            if (e.target && e.target.id === 'chat-widget-input-text' && e.key === 'Enter') {
+                e.preventDefault();
+                sendTextMessage();
+            }
+        });
+    }
+
+    function handleClicks(e) {
+        // Mở/Đóng Widget
+        const launcherBtn = e.target.closest('#chat-widget-btn') || e.target.closest('#chatIcon');
         if (launcherBtn) {
             e.preventDefault();
             const widgetWindow = document.getElementById('chat-widget-window');
@@ -30,119 +107,95 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        // Tắt Widget
         const closeBtn = e.target.closest('#close-chat-btn');
         if (closeBtn) {
             e.preventDefault();
-            const widgetWindow = document.getElementById('chat-widget-window');
-            if (widgetWindow) widgetWindow.classList.add('d-none');
+            document.getElementById('chat-widget-window')?.classList.add('d-none');
             return;
         }
 
+        // Nút Gửi Tin Nhắn
         const sendBtn = e.target.closest('#chat-widget-send-btn');
         if (sendBtn) {
             e.preventDefault();
             sendTextMessage();
             return;
         }
-    });
 
-    // ==========================================
-    // 2. LẮNG NGHE SỰ KIỆN SUBMIT FORM (QUAN TRỌNG: FIX LỖI TẠO PHIÊN)
-    // ==========================================
-    document.addEventListener('submit', async (e) => {
+        // Đã xóa chức năng nút Đính kèm ở đây
+    }
+
+    async function handleForms(e) {
         const startForm = e.target.closest('#start-consultation-form');
-        if (startForm) {
-            e.preventDefault();
-            
-            const nameEl = document.getElementById('chat-customer-name');
-            const phoneEl = document.getElementById('chat-customer-phone');
-            const noteEl = document.getElementById('chat-customer-note');
-            const submitBtn = startForm.querySelector('button[type="submit"]');
+        if (!startForm) return;
 
-            const name = nameEl.value.trim();
-            const phone = phoneEl.value.trim();
-            const note = noteEl ? noteEl.value.trim() : '';
+        e.preventDefault();
 
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang kết nối...';
+        const name = document.getElementById('chat-customer-name')?.value.trim();
+        const phone = document.getElementById('chat-customer-phone')?.value.trim();
+        const note = document.getElementById('chat-customer-note')?.value.trim() || '';
+        const submitBtn = startForm.querySelector('button[type="submit"]');
 
-            try {
-                // FIX: Đổi từ 'full_name' thành 'customer_name' cho khớp với Backend
-                const payloadData = { 
-                    customer_name: name,  
-                    phone: phone, 
-                    note: note, 
-                    status: 'new' // Đổi 'pending' thành 'new' thường dùng trong model Django
-                };
+        if (!name || !phone) return;
 
-                console.log("Đang gửi dữ liệu tạo Chat lên API:", payloadData);
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang kết nối...';
 
-                const res = await fetch(`${API_BASE_URL}/consultations/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payloadData)
-                });
+        try {
+            const payloadData = {
+                customer_name: name,
+                customer_contact: phone, 
+                note: note,
+                status: 'new'
+            };
 
-                // Xử lý báo lỗi chi tiết nếu Backend từ chối
-                if (!res.ok) {
-                    const errorData = await res.json();
-                    console.error("Lỗi từ Backend:", errorData);
-                    throw new Error(JSON.stringify(errorData));
-                }
-                
-                const data = await res.json();
-                
-                if (data.id) {
-                    consultationId = data.id;
-                    customerName = name;
-                    
-                    localStorage.setItem('current_consultation_id', consultationId);
-                    localStorage.setItem('chat_customer_name', customerName);
-                    
-                    startForm.reset();
-                    checkCurrentSession();
-                }
-            } catch (err) {
-                console.error("Lỗi bắt được:", err);
-                alert("Không thể bắt đầu chat do API từ chối. Vui lòng mở F12 -> Console để xem lỗi đỏ!");
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = 'Bắt đầu chat';
+            const res = await fetch(`${apiBaseUrl}/consultations/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payloadData)
+            });
+
+            if (!res.ok) throw new Error("Lỗi API khởi tạo chat");
+
+            const data = await res.json();
+            if (data.id) {
+                consultationId = String(data.id);
+                customerName = name;
+                localStorage.setItem('current_consultation_id', consultationId);
+                localStorage.setItem('chat_customer_name', customerName);
+
+                // Xóa cache session sau khi gửi thành công
+                sessionStorage.removeItem('tmp_chat_name');
+                sessionStorage.removeItem('tmp_chat_phone');
+                sessionStorage.removeItem('tmp_chat_note');
+
+                startForm.reset();
+                checkCurrentSession();
             }
+        } catch (err) {
+            console.error(err);
+            alert("Không thể bắt đầu chat. Vui lòng thử lại sau.");
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Bắt đầu chat';
         }
-    });
+    }
 
-    // ==========================================
-    // 3. NHẤN ENTER ĐỂ GỬI & FILE UPLOAD
-    // ==========================================
-    document.addEventListener('keypress', (e) => {
-        if (e.target && e.target.id === 'chat-widget-input-text' && e.key === 'Enter') {
-            e.preventDefault();
-            sendTextMessage();
-        }
-    });
-
-    document.addEventListener('change', async (e) => {
-        if (e.target && e.target.id === 'chat-file-upload') {
-            alert("Tính năng gửi file đang được hoàn thiện!");
-            e.target.value = ''; 
-        }
-    });
-
-    // ==========================================
-    // 4. CÁC HÀM XỬ LÝ GIAO DIỆN CHAT & WEBSOCKET
-    // ==========================================
+    // =========================================================
+    // XỬ LÝ WEBSOCKET & DỮ LIỆU
+    // =========================================================
     function checkCurrentSession() {
         const formView = document.getElementById('chat-widget-form');
         const conversationView = document.getElementById('chat-widget-conversation');
-        
+
         if (!formView || !conversationView) return;
 
         if (consultationId) {
             formView.classList.add('d-none');
             conversationView.classList.remove('d-none');
             conversationView.classList.add('d-flex');
-            
+
             if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
                 connectWebSocket(consultationId);
                 fetchChatHistory(consultationId);
@@ -155,26 +208,33 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function connectWebSocket(id) {
-        const wsUrl = `${WS_BASE_URL}/chat/${id}/`;
-        console.log("Đang kết nối WebSocket tới:", wsUrl);
+        if (chatSocket) chatSocket.close();
         
+        const wsUrl = `${wsBaseUrl}/chat/${id}/`;
         chatSocket = new WebSocket(wsUrl);
 
-        chatSocket.onopen = function() {
-            console.log("✅ Kết nối WebSocket thành công!");
-        };
+        chatSocket.onopen = () => console.log("WebSocket Widget Đã kết nối");
 
-        chatSocket.onmessage = function(e) {
+        chatSocket.onmessage = (e) => {
             const data = JSON.parse(e.data);
+            
+            // Bỏ qua sự kiện typing
             if (data.type === 'typing' || data.type === 'stop_typing') return;
+            
             appendWidgetMessage(data);
+
+            // Bật thông báo nếu tin nhắn từ Admin/Staff
+            if (data.is_staff || data.is_staff_reply) {
+                showGlobalNotification(data.sender_name || 'TIS Broker', data.message);
+            }
         };
 
-        chatSocket.onclose = function(e) {
-            console.warn('⚠️ Mất kết nối WebSocket. Đang tự động thử lại sau 3s...');
-            setTimeout(() => {
+        chatSocket.onclose = () => {
+            console.warn('Mất kết nối WebSocket. Đang thử lại...');
+            clearTimeout(reconnectTimer);
+            reconnectTimer = setTimeout(() => {
                 const widgetWindow = document.getElementById('chat-widget-window');
-                if (widgetWindow && !widgetWindow.classList.contains('d-none')) {
+                if (widgetWindow && !widgetWindow.classList.contains('d-none') && consultationId) {
                     connectWebSocket(consultationId);
                 }
             }, 3000);
@@ -183,57 +243,73 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function fetchChatHistory(id) {
         try {
-            const res = await fetch(`${API_BASE_URL}/consultations/${id}/messages/`);
+            const res = await fetch(`${apiBaseUrl}/consultations/${id}/messages/`);
             if (!res.ok) return;
-            
+
             const msgs = await res.json();
             const msgBox = document.getElementById('chat-widget-messages');
-            
-            if (msgs.length > 0 && msgBox) {
-                msgBox.innerHTML = ''; 
-                msgs.forEach(m => {
-                    appendWidgetMessage({
-                        message: m.message,
-                        is_staff_reply: m.is_staff_reply,
-                        attachment_url: m.attachment,
-                        attachment_type: m.attachment_type,
-                        created_at: new Date(m.created_at).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})
-                    });
-                });
+
+            if (Array.isArray(msgs) && msgs.length > 0 && msgBox) {
+                msgBox.innerHTML = '';
+                msgs.forEach(m => appendWidgetMessage(m));
             }
-        } catch (e) { console.error("Lỗi lấy lịch sử chat:", e); }
+        } catch (e) {
+            console.error("Lỗi lấy lịch sử chat:", e);
+        }
     }
 
+    // =========================================================
+    // XỬ LÝ GIAO DIỆN (UI)
+    // =========================================================
     function appendWidgetMessage(data) {
         const msgBox = document.getElementById('chat-widget-messages');
         if (!msgBox) return;
 
-        const isMe = !data.is_staff_reply; 
+        const isMe = !data.is_staff_reply;
         let contentHtml = '';
 
         if (data.message) {
             const safeText = data.message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            contentHtml += `<div>${safeText.replace(/\n/g, '<br>')}</div>`;
+            contentHtml += `<div style="line-height: 1.4;">${safeText.replace(/\n/g, '<br>')}</div>`;
         }
 
+        // Vẫn giữ code hiển thị file đính kèm để khách xem được file Admin gửi
         if (data.attachment_url) {
             const fileUrl = data.attachment_url.startsWith('http') ? data.attachment_url : `http://${currentHost}:8000${data.attachment_url}`;
             if (data.attachment_type === 'image') {
-                contentHtml += `<div class="${data.message ? 'mt-1' : ''}"><a href="${fileUrl}" target="_blank"><img src="${fileUrl}" style="max-width: 100%; border-radius: 8px;"></a></div>`;
+                contentHtml += `<div class="${data.message ? 'mt-2' : ''}"><a href="${fileUrl}" target="_blank"><img src="${fileUrl}" style="max-width: 180px; max-height: 200px; object-fit: cover; border-radius: 8px;"></a></div>`;
             } else {
-                contentHtml += `<div class="${data.message ? 'mt-1' : ''}"><a href="${fileUrl}" target="_blank" style="color: inherit; text-decoration: underline;"><i class="fas fa-file-alt"></i> Tệp đính kèm</a></div>`;
+                const textColor = isMe ? '#fff' : '#D71920';
+                contentHtml += `
+                    <div class="${data.message ? 'mt-2' : ''} p-2 rounded d-flex align-items-center gap-2" style="background: rgba(0,0,0,0.08);">
+                        <i class="fas fa-file-alt" style="color: ${textColor};"></i>
+                        <a href="${fileUrl}" target="_blank" style="color: ${textColor}; text-decoration: none; font-weight: 500; font-size: 0.85rem;">Xem tệp đính kèm</a>
+                    </div>`;
             }
         }
 
-        const alignClass = isMe ? 'widget-msg-right' : 'widget-msg-left';
+        const alignClass = isMe ? 'justify-content-end' : 'justify-content-start';
+        const bubbleClass = isMe ? 'widget-bubble-me' : 'widget-bubble-staff';
+        const timeAlign = isMe ? 'text-end' : 'text-start';
+        
+        const avatarHtml = !isMe ? `
+            <div class="widget-avatar me-2 mt-auto mb-1 flex-shrink-0">
+                <img src="/fe/images/logo_tab.png" alt="TIS" width="28" height="28">
+            </div>` : '';
+
+        const staffNameHtml = !isMe ? `<small class="text-muted mb-1" style="font-size: 0.7rem; margin-left: 2px;">${data.sender_name || 'TIS Broker'}</small>` : '';
+        const timeStr = data.created_at ? (data.created_at.includes('T') ? new Date(data.created_at).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : data.created_at) : new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
+
         const html = `
-            <div class="widget-msg ${alignClass} animate-fade-in" style="animation: fadeIn 0.3s ease-in-out;">
-                ${contentHtml}
-                <div class="text-end" style="font-size: 10px; opacity: 0.7; margin-top: 3px;">
-                    ${data.created_at || new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})}
+            <div class="d-flex w-100 ${alignClass} mb-3 animate-fade-in">
+                ${avatarHtml}
+                <div class="d-flex flex-column align-items-${isMe ? 'end' : 'start'}" style="max-width: 85%;">
+                    ${staffNameHtml}
+                    <div class="${bubbleClass} shadow-sm">${contentHtml}</div>
+                    <div class="text-muted mt-1 ${timeAlign}" style="font-size: 0.65rem;">${timeStr}</div>
                 </div>
             </div>`;
-            
+
         const initialText = msgBox.querySelector('.text-center.text-muted');
         if (initialText) initialText.remove();
 
@@ -241,21 +317,29 @@ document.addEventListener("DOMContentLoaded", () => {
         msgBox.scrollTo({ top: msgBox.scrollHeight, behavior: 'smooth' });
     }
 
+    // =========================================================
+    // XỬ LÝ GỬI TIN NHẮN TEXT 
+    // =========================================================
     function sendTextMessage() {
         const inputEl = document.getElementById('chat-widget-input-text');
         if (!inputEl) return;
-        
-        const text = inputEl.value.trim();
 
+        const text = inputEl.value.trim();
         if (text && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
             chatSocket.send(JSON.stringify({
-                'message': text,
-                'sender_name': customerName,
-                'is_staff': false 
+                message: text,
+                sender_name: customerName,
+                is_staff: false
             }));
-            
-            inputEl.value = ''; 
+            inputEl.value = '';
             inputEl.focus();
         }
     }
-});
+}
+
+// Khởi chạy an toàn
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initChatWidget);
+} else {
+    initChatWidget();
+}

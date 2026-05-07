@@ -23,42 +23,45 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 // Thêm hàm này vào file chat.js của bạn
+// fe/user/js/chat.js
+
 async function loadConsultations() {
     const ticketList = document.getElementById('ticket-list');
-    
     try {
-        // Gọi API lấy danh sách các phiên tư vấn của User
-        // (Lưu ý kiểm tra lại xem Backend của bạn dùng endpoint là /consultations/ hay /api/consultations/)
         const data = await fetchAPI('/consultations/'); 
-        
-        ticketList.innerHTML = ''; // Xóa chữ "Đang tải..."
+        ticketList.innerHTML = '';
         
         if (!data || data.length === 0) {
             ticketList.innerHTML = '<div class="text-center p-4 text-muted">Bạn chưa có yêu cầu hỗ trợ nào.</div>';
             return;
         }
 
-        // Render danh sách các phòng chat
         data.forEach(item => {
             const isActive = item.id === activeConsultationId ? 'active' : '';
-            const statusText = item.status === 'new' ? 'Đang chờ' : (item.status === 'in_progress' ? 'Đang hỗ trợ' : 'Đã đóng');
+            const statusText = item.status === 'new' ? 'Đang chờ' : (item.status === 'in_progress' ? 'Đang hỗ trợ' : 'Đang hỗ trợ');
             
+            // Lấy nội dung tin nhắn mới nhất
+            const lastMsgText = item.last_message ? item.last_message.message : 'Bắt đầu cuộc trò chuyện';
+            const lastMsgTime = item.last_message ? item.last_message.time : '';
+
             ticketList.insertAdjacentHTML('beforeend', `
                 <div class="chat-ticket ${isActive}" onclick="openChat(${item.id}, '${item.status}')">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <strong class="text-danger">#${item.id} - Hỗ trợ</strong>
+                        <small class="text-muted" style="font-size: 10px;">${lastMsgTime}</small>
                     </div>
-                    <div class="text-muted small">
+                    <div class="text-muted small text-truncate" style="max-width: 100%;">
+                        ${lastMsgText}
+                    </div>
+                    <div class="small mt-1" style="font-size: 11px;">
                         <i class="fas fa-circle ${item.status === 'new' ? 'text-warning' : 'text-success'} me-1" style="font-size: 8px;"></i> 
                         ${statusText}
                     </div>
                 </div>
             `);
         });
-        
     } catch (error) {
         console.error("Lỗi khi tải danh sách chat:", error);
-        ticketList.innerHTML = '<div class="text-center p-4 text-danger">Lỗi tải dữ liệu. Vui lòng thử lại.</div>';
     }
 }
 
@@ -107,8 +110,8 @@ function connectWebSocket(id) {
     if (chatSocket) chatSocket.close(); // Đóng kết nối cũ nếu đổi phòng chat
 
     const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const host = window.location.hostname || "127.0.0.1";
-    const port = (host === "127.0.0.1" || host === "localhost") ? ":8000" : "";
+    const host = window.location.hostname || "hcm-tis-uat.tisbroker.local";
+    const port = (host === "hcm-tis-uat.tisbroker.local" || host === "localhost") ? ":8000" : "";
     
     chatSocket = new WebSocket(`${protocol}${host}${port}/ws/chat/${id}/`);
 
@@ -118,7 +121,6 @@ function connectWebSocket(id) {
             
             // Xử lý sự kiện "Đang gõ"
             if (data.type === 'typing') {
-                // Khách chỉ thấy hiệu ứng "..." nếu người gõ là Staff (Admin)
                 if (data.is_staff) showTypingIndicator(); 
                 return;
             }
@@ -133,6 +135,11 @@ function connectWebSocket(id) {
             appendMessageToDOM(data);
             const chatBox = document.getElementById('chat-box');
             chatBox.scrollTop = chatBox.scrollHeight;
+            
+            // ---> ĐOẠN CODE MỚI THÊM: Bật thông báo nếu tin nhắn NÀY LÀ CỦA ADMIN GỬI
+            if (data.is_staff || data.is_staff_reply) {
+                showNewMessageNotification(data.sender_name || 'TIS Broker', data.message);
+            }
             
         } catch (err) {
             console.error("Lỗi parse tin nhắn:", err);
@@ -305,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Gọi API lưu file (LƯU Ý: Sửa lại đường dẫn API domain thực tế của bạn)
-            const BASE_URL = 'http://127.0.0.1:8000'; 
+            const BASE_URL = 'http://hcm-tis-uat.tisbroker.local:8000'; 
             const response = await fetch(`${BASE_URL}/api/chat/upload/`, {
                 method: 'POST',
                 body: formData
@@ -400,3 +407,62 @@ style.innerHTML = `
     }
 `;
 document.head.appendChild(style);
+
+
+// =========================================================
+// CHỨC NĂNG BẬT THÔNG BÁO POPUP & BÁO "ĐANG GÕ..." (CHO USER)
+// =========================================================
+
+// 1. Yêu cầu quyền thông báo khi mở trang
+document.addEventListener('DOMContentLoaded', () => {
+    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission();
+    }
+});
+
+// 2. Hàm hiển thị thông báo trình duyệt
+function showNewMessageNotification(senderName, messageText) {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+    if (document.hidden) {
+        const bodyText = messageText ? messageText : "[Đã gửi một tệp đính kèm]";
+        const notification = new Notification(`Tin nhắn mới từ ${senderName}`, {
+            body: bodyText,
+            icon: "/fe/images/logo.png" 
+        });
+
+        notification.onclick = function() {
+            window.focus();
+            this.close();
+        };
+    }
+}
+
+// 3. Bắt sự kiện Khách hàng đang gõ phím
+document.addEventListener('DOMContentLoaded', () => {
+    const msgInput = document.getElementById('msg-input');
+    if (msgInput) {
+        let typingTimer;
+        msgInput.addEventListener('input', () => {
+            if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) return;
+
+            if (!typingSent) {
+                typingSent = true;
+                chatSocket.send(JSON.stringify({
+                    type: 'typing',
+                    sender_id: userInfo.id,
+                    is_staff: false
+                }));
+            }
+
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                typingSent = false;
+                chatSocket.send(JSON.stringify({
+                    type: 'stop_typing',
+                    is_staff: false
+                }));
+            }, 2000);
+        });
+    }
+});

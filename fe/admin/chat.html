@@ -9,6 +9,14 @@
     <link rel="stylesheet" href="../css/common.css">
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/chat.css">
+    <style>
+        /* CSS Tùy chỉnh màu đỏ cho Admin Chat */
+        :root { --tis-red: #D71920; }
+        .btn-primary, .bg-primary { background-color: var(--tis-red) !important; border-color: var(--tis-red) !important; }
+        .text-danger { color: var(--tis-red) !important; }
+        .msgr-tabs .btn.active { background-color: var(--tis-red) !important; color: white !important; border: none; }
+        .msgr-item.active { border-left: 4px solid var(--tis-red); background-color: #fff1f1; }
+    </style>
 </head>
 <body>
     <div class="main-content">
@@ -16,11 +24,18 @@
             <div class="msgr-sidebar">
                 <div class="msgr-sidebar-header">
                     <h4 class="fw-bold mb-0">Messenger</h4>
-                    <div class="msgr-search-container">
+                    <div class="msgr-search-container mt-2">
                         <i class="fas fa-search"></i>
                         <input type="text" placeholder="Tìm kiếm khách hàng...">
                     </div>
                 </div>
+                
+                <div class="msgr-tabs d-flex p-2 border-bottom bg-white">
+                    <button class="flex-fill btn btn-sm btn-primary active rounded-pill mx-1 filter-btn" data-filter="all">Tất cả</button>
+                    <button class="flex-fill btn btn-sm btn-light rounded-pill mx-1 filter-btn" data-filter="guest">Vãng lai</button>
+                    <button class="flex-fill btn btn-sm btn-light rounded-pill mx-1 filter-btn" data-filter="user">Thành viên</button>
+                </div>
+                
                 <div class="msgr-list" id="conv-list">
                     </div>
             </div>
@@ -31,7 +46,9 @@
                         <div class="msgr-avatar-lg" id="header-avatar">?</div>
                         <div>
                             <div class="fw-bold" id="header-name">Chọn hội thoại</div>
-                            <div class="msgr-status" id="header-status"><i class="fas fa-circle" style="font-size:0.5rem;color:#65676b;margin-right:5px"></i>Offline</div>
+                            <div class="msgr-status text-muted" id="header-status" style="font-size: 0.8rem;">
+                                <i class="fas fa-circle me-1" style="font-size:0.5rem;color:#65676b"></i>Offline
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -39,18 +56,18 @@
                 <div class="msgr-chat-box" id="message-box">
                     <div class="msgr-empty">
                         <i class="fab fa-facebook-messenger" style="font-size:4rem;color:#ddd;margin-bottom:15px"></i>
-                        <p class="text-muted">Chọn một cuộc trò chuyện để bắt đầu hỗ trợ khách hàng</p>
+                        <p class="text-muted">Chọn một cuộc trò chuyện để bắt đầu hỗ trợ</p>
                     </div>
                 </div>
 
                 <div class="msgr-footer" id="input-area" style="display: none;">
                     <div class="msgr-footer-icons">
-                        <i class="fas fa-plus-circle" title="Thêm file"></i>
-                        <i class="fas fa-image" title="Gửi ảnh"></i>
+                        <i class="fas fa-plus-circle" id="btn-upload-file" title="Thêm file"></i>
+                        <i class="fas fa-image" id="btn-upload-img" title="Gửi ảnh"></i>
                     </div>
+                    
                     <div class="msgr-input-wrapper">
                         <input type="text" id="msg-input" placeholder="Aa" onkeypress="handleEnter(event)">
-                        <i class="fas fa-smile" title="Emoji"></i>
                     </div>
                     <button class="msgr-send-btn" onclick="sendMessage()" title="Gửi">
                         <i class="fas fa-paper-plane"></i>

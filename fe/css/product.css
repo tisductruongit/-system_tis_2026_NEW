@@ -3,25 +3,25 @@
    MÔ TẢ: CSS riêng cho trang Danh sách sản phẩm & Chi tiết sản phẩm
    ========================================= */
 
-/* --- 1. SIDEBAR DANH MỤC (CỘT TRÁI) --- */
+/* --- 1. GIAO DIỆN DANH MỤC SẢN PHẨM (SIDEBAR) --- */
 .category-sidebar {
-    background: #fff;
-    border-radius: 8px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     border: 1px solid #f0f0f0;
 }
 
 .category-header {
-    background: #d71920; /* Màu đỏ thương hiệu */
-    color: #fff;
-    padding: 15px 20px;
+    background: linear-gradient(135deg, #D71920, #b01218);
+    color: white;
+    padding: 16px 20px;
     font-weight: 700;
-    text-transform: uppercase;
-    font-size: 0.95rem;
+    font-size: 1.1rem;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
@@ -31,44 +31,53 @@
     margin: 0;
 }
 
-.category-item {
-    border-bottom: 1px solid #f8f9fa;
-    transition: all 0.2s ease;
+.category-list li {
+    padding: 14px 20px;
+    cursor: pointer;
+    border-bottom: 1px solid #f5f6fa;
+    display: flex;
+    align-items: center;
+    color: #495057;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
 }
 
-.category-item:last-child {
+.category-list li:last-child {
     border-bottom: none;
 }
 
-.category-link {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 20px;
-    color: #444;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.3s ease;
+.category-list li i {
+    width: 24px;
+    text-align: center;
+    margin-right: 12px;
+    color: #adb5bd;
+    font-size: 1.1rem;
+    transition: color 0.3s ease;
 }
 
-/* Hiệu ứng khi hover vào danh mục */
-.category-link:hover, 
-.category-link.active {
-    background-color: #fef2f2; /* Màu hồng rất nhạt */
-    color: #d71920;
-    padding-left: 25px; /* Trượt nhẹ sang phải */
-    font-weight: 600;
+/* Hiệu ứng khi di chuột (Hover) & Đang chọn (Active) */
+.category-list li:hover {
+    background-color: #fff5f5;
+    color: #D71920;
+    padding-left: 24px; /* Hiệu ứng đẩy text nhẹ sang phải */
 }
 
-.category-link i.small {
-    font-size: 0.8rem;
-    opacity: 0.6;
+.category-list li:hover i {
+    color: #D71920;
 }
 
-.category-link:hover i.small {
-    opacity: 1;
+.category-list li.active {
+    background-color: #fff5f5;
+    color: #D71920;
+    border-left: 4px solid #D71920; /* Vạch đỏ bên trái */
+    font-weight: 700;
 }
+
+.category-list li.active i {
+    color: #D71920;
+}
+
 
 /* --- 2. THẺ SẢN PHẨM (CARD GRID) --- */
 .product-item-col {

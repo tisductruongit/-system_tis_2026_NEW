@@ -8,13 +8,15 @@ document.addEventListener("DOMContentLoaded", () => {
     loadFooter();
 });
 
+let chatWidgetScriptPromise = null;
+
 // --- 1. LOAD HEADER ---
 async function loadHeader() {
     const placeholder = document.getElementById('header-placeholder');
     if (!placeholder) return;
 
     try {
-        const response = await fetch('components/header.html');
+        const response = await fetch('/components/header.html');
         if (!response.ok) throw new Error("Header not found");
         placeholder.innerHTML = await response.text();
         
@@ -77,9 +79,37 @@ async function loadFooter() {
     if (placeholder) {
         try {
             const response = await fetch('components/footer.html');
-            if (response.ok) placeholder.innerHTML = await response.text();
+            if (response.ok) {
+                placeholder.innerHTML = await response.text();
+                ensureChatWidgetScript();
+            }
         } catch (e) { console.error("Lỗi tải Footer"); }
     }
+}
+
+function ensureChatWidgetScript() {
+    if (window.__chatWidgetInitialized) return Promise.resolve();
+    if (chatWidgetScriptPromise) return chatWidgetScriptPromise;
+
+    const existingScript = document.querySelector('script[data-chat-widget-script="true"]');
+    if (existingScript) {
+        chatWidgetScriptPromise = Promise.resolve();
+        return chatWidgetScriptPromise;
+    }
+
+    chatWidgetScriptPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'user/js/chat-widget.js';
+        script.dataset.chatWidgetScript = 'true';
+        script.onload = () => resolve();
+        script.onerror = () => {
+            chatWidgetScriptPromise = null;
+            reject(new Error('Không thể tải chat widget script'));
+        };
+        document.body.appendChild(script);
+    });
+
+    return chatWidgetScriptPromise;
 }
 
 // --- 4. CHECK AUTH (Đăng nhập/Đăng xuất) ---
@@ -187,3 +217,20 @@ window.handleGlobalSearch = function(e) {
         window.location.href = `products.html?search=${encodeURIComponent(keyword)}`;
     }
 }
+document.addEventListener("DOMContentLoaded", function() {
+    // Chờ một chút để header được nạp xong (nếu bạn dùng fetch)
+    setTimeout(() => {
+        const chatMenuItem = document.getElementById('chat-menu-item');
+        
+        // Sử dụng hàm getAccessToken() có sẵn trong core.js của bạn
+        if (typeof getAccessToken === 'function' && getAccessToken()) {
+            if (chatMenuItem) {
+                chatMenuItem.style.display = 'block'; // Hiển thị nếu đã login
+            }
+        } else {
+            if (chatMenuItem) {
+                chatMenuItem.style.display = 'none'; // Ẩn nếu chưa login
+            }
+        }
+    }, 100); // Delay nhẹ để đảm bảo DOM đã sẵn sàng
+});

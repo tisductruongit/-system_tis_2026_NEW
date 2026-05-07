@@ -2,21 +2,28 @@
 
 .chat-wrapper-global {
     display: flex;
-    height: calc(100vh - 20px);
-    margin: 10px;
+    height: calc(100vh - 90px); /* 90px là trừ hao chiều cao của Top Header Admin */
     background: #fff;
-    border-radius: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     overflow: hidden;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.1);
 }
 
 /* SIDEBAR MESSENGER */
 .msgr-sidebar {
-    width: 360px;
-    border-right: 1px solid #efefef;
+    width: 320px;
+    min-width: 320px;
+    border-right: 1px solid #dee2e6;
     display: flex;
     flex-direction: column;
-    background: #fff;
+}
+
+/* Cột bên phải: Khu vực chat chính */
+.msgr-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fa;
 }
 
 @media (max-width: 768px) {
@@ -120,18 +127,16 @@
 
 .msgr-status { font-size: 0.75rem; color: #65676b; }
 
+/* Khu vực hiển thị tin nhắn (cho phép cuộn) */
 .msgr-chat-box {
     flex: 1;
-    padding: 20px;
     overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 4px; /* Messenger để tin nhắn khá sít nhau */
+    padding: 20px;
 }
 
 /* BONG BÓNG TIN NHẮN */
 .msg-bubble {
-    max-width: 65%;
+    max-width: 100%; /* ĐÃ FIX: Chữ không bị bó hẹp quá mức */
     padding: 8px 12px;
     border-radius: 18px;
     font-size: 0.95rem;
@@ -164,10 +169,12 @@
 
 /* FOOTER / INPUT */
 .msgr-footer {
-    padding: 10px 20px;
+    padding: 15px 20px;
+    background: #fff;
+    border-top: 1px solid #dee2e6;
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
 }
 
 .msgr-footer-icons {
@@ -179,20 +186,18 @@
 
 .msgr-input-wrapper {
     flex: 1;
+    display: flex;
     background: #f0f2f5;
     border-radius: 20px;
     padding: 8px 15px;
-    display: flex;
-    align-items: center;
 }
 
 .msgr-input-wrapper input {
-    flex: 1;
-    background: transparent;
     border: none;
+    background: transparent;
+    width: 100%;
     outline: none;
 }
-
 .msgr-input-wrapper i { color: #D71920; cursor: pointer; }
 
 .msgr-send-btn {
@@ -211,33 +216,6 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-}
-
-/* TYPING INDICATOR */
-.typing-indicator {
-    max-width: 65%;
-    padding: 12px;
-    border-radius: 18px;
-    background: #e4e6eb;
-    border-top-left-radius: 4px;
-    align-self: flex-start;
-}
-
-.typing-indicator span {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #999;
-    display: inline-block;
-    animation: typing 1.4s infinite;
-}
-
-.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes typing {
-    0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
-    30% { opacity: 1; transform: translateY(-10px); }
 }
 
 /* RESPONSIVE IMPROVEMENTS */
