@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giỏ hàng của bạn - TIS Broker</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .cart-item-img {
+            width: 90px;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid #eee;
+        }
+        .cart-item-row { transition: all 0.3s ease; }
+        .cart-item-row:hover { background-color: #fcfcfc; }
+        .btn-remove { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .btn-remove:hover { background-color: #fee2e2; color: var(--primary-color); }
+    </style>
+</head>
+<body class="bg-light">
+
+    <header id="header-placeholder"></header>
+
+    <main class="container" style="margin-top: 110px; margin-bottom: 80px;">
+        <h2 class="fw-bold text-dark mb-4">Giỏ hàng của bạn</h2>
+
+        <div class="row g-4" id="cart-container">
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-danger"></div>
+                <p class="mt-2 text-muted">Đang tải giỏ hàng...</p>
+            </div>
+        </div>
+    </main>
+
+    <footer id="footer-placeholder"></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../js/common.js"></script>
+    <script src="../js/layout.js"></script>
+    <script src="js/cart.js"></script> </body>
+</html>
