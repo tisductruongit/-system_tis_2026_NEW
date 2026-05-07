@@ -1,33 +1,9 @@
-// login.js
-
-function loginWithGoogle() {
-    // Điều hướng trình duyệt đến endpoint của Django Backend
-    // Địa chỉ này sẽ kích hoạt luồng OAuth2 mà bạn đã cấu hình trong Admin
-    const backendUrl = "http://localhost:8000"; // Hoặc địa chỉ IP server của bạn
-    window.location.href = `${backendUrl}/accounts/google/login/`;
-}
-
-
-// Thêm vào login.js
-function loginWithMicrosoft() {
-    // Điều hướng tới endpoint của Django để bắt đầu luồng OAuth2
-    window.location.href = `http://localhost:8000/accounts/microsoft/login/`;
-}
+/**
+ * js/login.js
+ * Xử lý đăng nhập, lưu trữ JWT và phân quyền người dùng.
+ */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Kiểm tra Token trên URL (ví dụ: ?access=...&refresh=...)
-    const params = new URLSearchParams(window.location.search);
-    const access = params.get('access');
-    const refresh = params.get('refresh');
-
-    if (access && refresh) {
-        localStorage.setItem('access_token', access);
-        localStorage.setItem('refresh_token', refresh);
-        
-        // Dùng hàm có sẵn của bạn để kiểm tra role và vào trang chính
-        checkUserRoleAndRedirect();
-        return;
-    }
     // 1. Nếu đã có Token, kiểm tra quyền để chuyển hướng ngay, không bắt đăng nhập lại
     if (getAccessToken()) {
         checkUserRoleAndRedirect();
@@ -123,21 +99,3 @@ function redirectByUserRole(role) {
         window.location.href = 'index.html';
     }
 }
-
-// Ví dụ logic xử lý sau khi lấy được token từ Google
-async function handleSocialLogin(provider, token) {
-    const response = await fetch(`${API_BASE_URL}/auth/${provider}/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: token })
-    });
-    const data = await response.json();
-    if (response.ok) {
-        localStorage.setItem('access_token', data.access);
-        localStorage.setItem('refresh_token', data.refresh);
-        // Chuyển hướng như logic cũ
-        checkUserRoleAndRedirect();
-    }
-}
-
-

@@ -4,7 +4,7 @@
  */
 
 // --- 1. CẤU HÌNH HỆ THỐNG ---
-const DOMAIN = "http://localhost:8000";
+const DOMAIN = "http://hcm-tis-uat.tisbroker.local:8000";
 const API_BASE_URL = `${DOMAIN}/api`;
 
 // --- 2. QUẢN LÝ TOKEN ---

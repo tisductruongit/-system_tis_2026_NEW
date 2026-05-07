@@ -4,9 +4,7 @@
  */
 
 // 1. CHỐNG NHẤP NHÁY: Ẩn giao diện cho đến khi xác thực xong
-// document.documentElement.style.display = 'none';
-
-// XÓA DÒNG NÀY: document.documentElement.style.display = 'none';
+document.documentElement.style.display = 'none';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // A. KIỂM TRA TOKEN
@@ -16,23 +14,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // --- 1. LẤY CACHE VÀ VẼ GIAO DIỆN NGAY LẬP TỨC (Không cần đợi API) ---
-    let cachedUser = sessionStorage.getItem('admin_user');
-    if (cachedUser) {
-        try {
-            cachedUser = JSON.parse(cachedUser);
-            renderAdminLayout(cachedUser); // Vẽ Menu lên màn hình ngay lập tức
-            activeCurrentMenu();
-        } catch (e) {}
-    } else {
-        // Nếu lỡ không có cache, hiện tạm Spinner loading cho thân thiện
-        document.body.insertAdjacentHTML('afterbegin', '<div id="tis-loader" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#f8f9fa;z-index:9999;display:flex;justify-content:center;align-items:center;"><div class="spinner-border text-danger"></div></div>');
-    }
-
-    // --- 2. GỌI API NGẦM ĐỂ XÁC THỰC BẢO MẬT ---
     try {
+        // B. LẤY THÔNG TIN USER
         const user = await fetchAPI('/users/me/');
 
+        // C. KIỂM TRA QUYỀN
         const allowedRoles = ['super_admin', 'admin', 'staff'];
         const hasAccess = user.is_superuser || allowedRoles.includes(user.role);
 
@@ -42,25 +28,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Cập nhật lại cache mới nhất từ server
         sessionStorage.setItem('admin_user', JSON.stringify(user));
 
-        // Nếu lúc nãy chưa có cache để vẽ, thì bây giờ có data rồi mới vẽ
-        if (!cachedUser) {
-            const loader = document.getElementById('tis-loader');
-            if (loader) loader.remove();
-            renderAdminLayout(user);
-            activeCurrentMenu();
-        } else if (cachedUser.role !== user.role || cachedUser.id !== user.id) {
-            // Nếu phát hiện quyền (role) trên server vừa bị đổi, ép tải lại trang
-            window.location.reload();
-        }
+        // D. RENDER GIAO DIỆN
+        renderAdminLayout(user);
+        activeCurrentMenu();
 
-        // --- 3. CẬP NHẬT SỐ LƯỢNG THÔNG BÁO ---
+        // E. HIỂN THỊ TRANG
+        document.documentElement.style.display = 'block';
+
+        // F. REALTIME UPDATES
         updateBadgeCount();
-        
-        // TẠM TẮT DÒNG NÀY ĐỂ TRÁNH GIẬT TRÌNH DUYỆT NHƯ ĐÃ PHÂN TÍCH
-        // setInterval(updateBadgeCount, 10000); 
+        setInterval(updateBadgeCount, 10000);
 
     } catch (error) {
         console.error("Lỗi xác thực Admin:", error);
@@ -68,6 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.replace('../login.html');
     }
 });
+
 /**
  * Render Sidebar và Topbar
  */

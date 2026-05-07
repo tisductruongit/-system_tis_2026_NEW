@@ -420,50 +420,6 @@ window.addToCart = async function() {
     }
 };
 
-
-
-// Gọi hàm này khi khách bấm nút "Thêm vào giỏ hàng"
-async function addToCart(packageId, quantity = 1) {
-    if (!getAccessToken()) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Yêu cầu đăng nhập',
-            text: 'Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng.',
-            confirmButtonText: 'Đăng nhập ngay',
-            showCancelButton: true,
-            cancelButtonText: 'Đóng'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = 'login.html';
-            }
-        });
-        return;
-    }
-
-    try {
-        await fetchAPI('/cart/add/', 'POST', { 
-            package_id: packageId, 
-            quantity: quantity 
-        });
-        
-        // Hiện thông báo dạng Toast (Góc phải màn hình)
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'success',
-            title: 'Đã thêm vào giỏ hàng',
-            showConfirmButton: false,
-            timer: 2000
-        });
-    } catch (error) {
-        Swal.fire('Lỗi', 'Không thể thêm vào giỏ hàng. Vui lòng thử lại.', 'error');
-    }
-}
-
-
-
-
-
 function getValidImageUrl(path) {
     if (!path) return 'https://placehold.co/800x600/f8f9fa/d71920?text=TIS+Broker';
     if (path.startsWith('http')) return path;

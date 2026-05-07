@@ -71,18 +71,20 @@
 
             <ul class="navbar-nav ms-auto align-items-center">
                 <li class="nav-item me-3">
-                    <a href="/user/cart.html" class="nav-link position-relative text-dark">
+                    <a href="cart.html" class="nav-link position-relative text-dark">
                         <i class="fas fa-shopping-cart fa-lg"></i>
                         <span id="cart-count-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem; display: none;">0</span>
                     </a>
                 </li>
 
-
-                <li id="chat-menu-item" style="display: none;">
-                    <a class="dropdown-item" href="user/chat.html">
-                        <i class="fas fa-headset me-2"></i> Hỗ trợ & Chat
+                <!-- ICON CHAT -->
+                <li class="nav-item me-3">
+                    <a id="chatIcon" href="#" class="nav-link position-relative text-dark" title="Chat với Admin">
+                        <i class="fas fa-comments fa-lg"></i>
+                        <span id="chat-unread-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem; display: none;">0</span>
                     </a>
                 </li>
+                
                 <li class="nav-item dropdown" id="auth-section">
                     <a href="login.html" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">Đăng nhập</a>
                 </li>

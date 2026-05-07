@@ -12,71 +12,30 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- 1. TẢI DANH MỤC (CATEGORY FILTER) ---
-// --- 1. TẢI DANH MỤC (CATEGORY FILTER) ---
 async function loadCategories() {
-    const containerDesktop = document.getElementById('category-list-container');
-    const containerMobile = document.getElementById('category-list-mobile');
+    const container = document.getElementById('category-filter');
+    if (!container) return;
 
     try {
         const categories = await fetchAPI('/categories/');
         
-        // Tạo mục "Tất cả" mặc định (dùng thẻ <li> theo đúng CSS của sidebar)
-        let html = `
-            <li class="active" onclick="filterProducts(this, 'all')">
-                <i class="fas fa-layer-group me-2"></i> Tất cả sản phẩm
-            </li>
-        `;
+        // Tạo nút "Tất cả" mặc định là active
+        let html = `<button class="btn btn-outline-danger rounded-pill me-2 mb-2 active" onclick="filterProducts(this, 'all')">Tất cả</button>`;
         
-        // Tạo các mục danh mục từ API
+        // Tạo các nút danh mục từ API
         if (categories && categories.length > 0) {
             html += categories.map(c => 
-                `<li onclick="filterProducts(this, ${c.id})">
-                    <i class="fas fa-angle-right me-2 text-danger"></i> ${c.name}
-                </li>`
+                `<button class="btn btn-outline-danger rounded-pill me-2 mb-2" onclick="filterProducts(this, ${c.id})">${c.name}</button>`
             ).join('');
         }
         
-        // Gắn HTML vào cả Desktop và Mobile
-        if (containerDesktop) containerDesktop.innerHTML = html;
-        if (containerMobile) containerMobile.innerHTML = html;
-        
+        container.innerHTML = html;
     } catch (e) {
         console.error("Lỗi tải danh mục:", e);
-        const errorHtml = `<li class="active">Tất cả sản phẩm (Lỗi kết nối)</li>`;
-        if (containerDesktop) containerDesktop.innerHTML = errorHtml;
-        if (containerMobile) containerMobile.innerHTML = errorHtml;
+        // Nếu lỗi thì chỉ hiện nút Tất cả
+        container.innerHTML = `<button class="btn btn-outline-danger rounded-pill me-2 mb-2 active">Tất cả</button>`;
     }
 }
-
-// --- 4. CHỨC NĂNG LỌC (FILTER) ---
-window.filterProducts = function(element, categoryId) {
-    // 1. Cập nhật trạng thái Active cho thẻ <li> được chọn
-    // Xóa class 'active' khỏi tất cả các <li> trong danh sách danh mục
-    document.querySelectorAll('.category-list li').forEach(li => li.classList.remove('active'));
-    
-    // Thêm class 'active' vào mục vừa click
-    if (element) {
-        element.classList.add('active');
-    }
-
-    // 2. Thực hiện lọc trên mảng allProducts
-    if (categoryId === 'all') {
-        renderProducts(allProducts);
-    } else {
-        // Lọc các sản phẩm có category id trùng khớp
-        const filtered = allProducts.filter(p => p.category == categoryId);
-        renderProducts(filtered);
-    }
-
-    // 3. Tự động đóng menu trượt (Offcanvas) trên Mobile sau khi khách chọn xong
-    const offcanvasEl = document.getElementById('offcanvasCategory');
-    if (offcanvasEl) {
-        const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasEl);
-        if (offcanvasInstance) {
-            offcanvasInstance.hide();
-        }
-    }
-};
 
 // --- 2. TẢI DANH SÁCH SẢN PHẨM ---
 async function loadProducts() {
@@ -205,45 +164,5 @@ window.filterProducts = function(btn, categoryId) {
         // Lọc các sản phẩm có category id trùng khớp
         const filtered = allProducts.filter(p => p.category == categoryId);
         renderProducts(filtered);
-    }
-};
-
-
-
-// --- CHỨC NĂNG TÌM KIẾM SẢN PHẨM ---
-window.searchProducts = function(keyword) {
-    // 1. Nếu chưa có dữ liệu sản phẩm thì thoát
-    if (!window.allProducts || window.allProducts.length === 0) return;
-
-    // 2. Chuẩn hóa từ khóa (viết thường, bỏ khoảng trắng thừa)
-    const term = keyword.toLowerCase().trim();
-
-    // 3. Nếu ô tìm kiếm bị xóa trắng, hiển thị lại toàn bộ sản phẩm
-    if (term === '') {
-        renderProducts(window.allProducts);
-        return;
-    }
-
-    // 4. Lọc các sản phẩm có tên chứa từ khóa
-    const filteredProducts = window.allProducts.filter(product => 
-        product.name.toLowerCase().includes(term)
-    );
-
-    // 5. Render lại danh sách
-    const container = document.getElementById('product-list');
-    
-    if (filteredProducts.length > 0) {
-        // Nếu có kết quả, gọi hàm render mặc định của bạn
-        renderProducts(filteredProducts);
-    } else {
-        // Nếu không có kết quả, hiển thị thông báo
-        if (container) {
-            container.innerHTML = `
-                <div class="col-12 text-center py-5 text-muted w-100">
-                    <i class="fas fa-search mb-3 fa-3x text-light" style="color: #dee2e6;"></i>
-                    <p class="fs-5">Không tìm thấy sản phẩm nào phù hợp với "<strong>${keyword}</strong>".</p>
-                </div>
-            `;
-        }
     }
 };
